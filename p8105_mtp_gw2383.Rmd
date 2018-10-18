@@ -2,29 +2,26 @@
 title: "p8105_mtp_gw2383"
 author: "Guojing Wu"
 date: "2018/10/17"
-output: html_document
+output:
+  github_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+theme_set(theme_bw())
 ```
 
-## R Markdown
+## read and tidy data
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r, cache = TRUE}
+activity_df = 
+  read_csv("./data/p8105_mtp_data.csv") %>% 
+  janitor::clean_names() %>% 
+  mutate(day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))) %>% 
+  arrange(week, day) # reordering the rows by 'day' to make it more readable
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+the data is collected across `r dim(activity_df)[1]` days (`r dim(activity_df)[1]/7` weeks), and each day we collected the activity data once per miniute (`r dim(activity_df)[2]-2` times per day)
