@@ -16,7 +16,7 @@ theme_set(theme_bw())
 
 ## read and tidy data
 
-```{r, cache = TRUE}
+```{r, cache = TRUE, message = FALSE}
 # change rhe cache parameter!!!!
 activity_df = 
   read_csv("./data/p8105_mtp_data.csv") %>% 
@@ -27,15 +27,32 @@ activity_df =
   arrange(week, day) # reordering the rows by 'day' to make it more readable
 ```
 
-the data is collected across `r dim(activity_df)[1]/1440` days (`r dim(activity_df)[1]/(7 * 1440)` weeks), and each day we collected the activity data 1440 times.
+the data is collected across `r dim(distinct(activity_df, week, day))[1]` days (`r dim(distinct(activity_df, week))[1]` weeks), and each day we collected the activity data `r dim(distinct(activity_df, act_time))[1]` times.
 
-plot a spaghetti plot:
+<!--
+A spaghetti plot: total_count over each week:
 
 ```{r, fig.height = 160, dpi = 300}
-activity_df %>% 
-  ggplot(aes(x = format_time, y = count)) +
+activity_df %>%
+  group_by(week, day) %>%
+  summarise(total_act = sum(count)) %>%
+  ggplot(aes(x = day, y = total_act, group = week, color = as.character(week))) +
   scale_y_log10() +
+  geom_line()
+```
+-->
+
+A boxplot: distribution over each week:
+```{r, fig.height = 4, out.width = "90%", dpi = 300}
+activity_df %>% 
+  group_by(week, day) %>% 
+  summarise(total_act = sum(count)) %>% 
+  ggplot(aes(x = week, y = total_act, group = week)) +
   geom_boxplot() +
-  coord_flip()
+  labs(
+    y = "Sum of counts for each day", 
+    title = "boxplot for sum of each day's counts across weeks"
+  )
 ```
 
+Here we can see that for each week there are some ourliers. And the whole `week 3` was collapsed into one dot, the proportion of value `1` within `week 3` is as high as `r activity_df %>% filter(week == 3) %>% summarise(prop = sum(count == 1) / length(count))`%.
