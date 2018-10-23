@@ -24,9 +24,11 @@ activity_df =
   read_csv("./data/p8105_mtp_data.csv") %>% 
   janitor::clean_names() %>% 
   gather(key = act_time, value = count, activity_1:activity_1440) %>% # make it recordable
-  mutate(
+  mutate( # refactor the variables
     day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")), 
-    week = factor(week)) %>% 
+    week = factor(week), 
+    act_time = factor((act_time), levels = paste("activity", (1:1440), sep = "_"))
+    ) %>% 
   arrange(week, day) # reordering the rows by 'day' to make it more readable
 ```
 
@@ -134,5 +136,38 @@ in_isolation / in_addition
 <!--   ) -->
 <!-- ``` -->
 
+## 24-hour profile
 
+```{r, dpi = 300}
+# distribution of the activity count by using heatmap
+activity_df %>% 
+  mutate(
+    count = log10(count), # doing log10 transformation of the count
+    format_time = factor(interaction(week, day), levels = paste(rep(1:47, each = 7), c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"), sep = ".")) # relevel eachday, so it ranked properly
+    ) %>% 
+  ggplot(aes(x = act_time, y = format_time, fill = count)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  guides(fill = guide_legend(title = "log10(count)")) +
+  scale_x_discrete( # rename the x axis label
+    breaks = paste("activity", (0:23)*60 + 1, sep = "_"), 
+    labels = c(0:23), 
+    name = "time/hour"
+    ) +
+  scale_y_discrete( # rename the y axis label
+    breaks = paste(1:47, "Sunday", sep = "."), 
+    labels = c((0:46) * 7 + 1), 
+    name = "week"
+  ) +
+  geom_vline(xintercept = 7*60, col = "red") + # an vertical line at 7 o'clock
+  geom_vline(xintercept = 23*60, col = "red") + # an vertical line at 23 o'clock
+  labs(
+    caption = "Fig.4 24-hour activity \"profiles\" for each day"
+  ) +
+  theme(
+    axis.text.y = element_text(size = 7),
+    plot.caption = element_text(hjust = 0, size = 10)
+  )
+```
 
+Here we can see that in general, the participant's avtive time is around `7:00 - 23:00`, and his inactive time is around `23:00 - 7:00`. 
