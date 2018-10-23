@@ -18,10 +18,11 @@ theme_set(theme_bw())
 
 ```{r, cache = TRUE, message = FALSE}
 # change rhe cache parameter!!!!
+# is format_time necessary?
+
 activity_df = 
   read_csv("./data/p8105_mtp_data.csv") %>% 
   janitor::clean_names() %>% 
-  mutate(format_time = paste(week, day, sep = "_")) %>% 
   gather(key = act_time, value = count, activity_1:activity_1440) %>% # make it recordable
   mutate(day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))) %>% 
   arrange(week, day) # reordering the rows by 'day' to make it more readable
@@ -51,8 +52,29 @@ activity_df %>%
   geom_boxplot() +
   labs(
     y = "Sum of counts for each day", 
-    title = "boxplot for sum of each day's counts across weeks"
+    title = "boxplot for sum of each day's counts between weeks"
   )
 ```
 
-Here we can see that for each week there are some ourliers. And the whole `week 3` was collapsed into one dot, the proportion of value `1` within `week 3` is as high as `r activity_df %>% filter(week == 3) %>% summarise(prop = sum(count == 1) / length(count))`%.
+Here we can see that for each week there are some ourliers. And the whole `week 3` was collapsed into one dot, the proportion of value `1` within `week 3` is as high as `r activity_df %>% filter(week == 3) %>% summarise(prop = sum(count == 1) / length(count)) * 100`%.
+
+## activity over time
+
+```{r, out.width = "90%", dpi = 300}
+# aggregate the count data across minutes
+cross_min = activity_df %>% 
+  group_by(week, day) %>% 
+  summarise(total_act = sum(count))
+
+ggplot(data = cross_min, aes(x = c(1:length(total_act)), y = total_act)) +
+  geom_point() +
+  stat_smooth(method = "lm", col = "red") +
+  labs(
+    x = "day", 
+    y = "sum of each day's counts", 
+    title = "scatterplot for sum of each day's counts between days"
+  )
+```
+
+Here we can see the linear regression line, the slope is positive: `r summary(lm(total_act ~ c(1:length(total_act)), cross_min))$coefficient[2,1]` and the p-value is very significant (`r summary(lm(total_act ~ c(1:length(total_act)), cross_min))$coefficient[2,4]`). Which suggest that this participant became more active over time.
+
