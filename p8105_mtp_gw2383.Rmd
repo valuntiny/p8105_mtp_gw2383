@@ -5,7 +5,6 @@ date: "2018/10/17"
 output:
   github_document:
     toc: true
-always_allow_html: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +19,6 @@ theme_set(theme_bw())
 
 ```{r, cache = TRUE, message = FALSE}
 # change rhe cache parameter!!!!
-# is format_time necessary?
 
 activity_df = 
   read_csv("./data/p8105_mtp_data.csv") %>% 
@@ -35,19 +33,6 @@ activity_df =
 ```
 
 the data is collected across `r dim(distinct(activity_df, week, day))[1]` days (`r dim(distinct(activity_df, week))[1]` weeks), and each day we collected the activity data `r dim(distinct(activity_df, act_time))[1]` times.
-
-<!--
-A spaghetti plot: total_count over each week:
-
-```{r, fig.height = 160, dpi = 300}
-activity_df %>%
-  group_by(week, day) %>%
-  summarise(total_act = sum(count)) %>%
-  ggplot(aes(x = day, y = total_act, group = week, color = as.character(week))) +
-  scale_y_log10() +
-  geom_line()
-```
--->
 
 A boxplot: distribution over each week:
 ```{r, fig.height = 4, out.width = "90%", dpi = 300}
@@ -126,18 +111,6 @@ cross_min %>%
 in_isolation / in_addition
 ```
 
-<!-- ```{r, dpi = 300, out.width = "90%"} -->
-<!-- # boxplot -->
-<!-- activity_df %>%  -->
-<!--   ggplot(aes(x = day, y = count, group = day)) + -->
-<!--   geom_boxplot() + -->
-<!--   scale_y_log10() + -->
-<!--   labs( -->
-<!--     y = "sum of activity counts",  -->
-<!--     title = "sum of each weekday's counts" -->
-<!--   ) -->
-<!-- ``` -->
-
 ## 24-hour profile
 
 ```{r, dpi = 300}
@@ -176,25 +149,29 @@ Here we can see that in general, the participant's avtive time is around `7:00 -
 
 24-hour activity profile (time effect)
 
-```{r}
-# activity_df %>% 
-#   group_by(week, act_time) %>% 
-#   summarise(sum_byweekday = sum(count)) %>% 
-#   ggplot(aes(x = act_time, y = sum_byweekday, group = week, color = week)) +
-#   geom_smooth(se = FALSE) +
-#   scale_x_discrete( # rename the x axis label
-#     breaks = paste("activity", (0:23)*60 + 1, sep = "_"), 
-#     labels = c(0:23), 
-#     name = "time/hour"
-#     ) +
-#   labs(
-#     y = "sum of activity counts",
-#     caption = "Fig.5 A) relationship between time and 24-hour activity profile"
-#   ) +
-#   theme(
-#     axis.text.y = element_text(size = 7),
-#     plot.caption = element_text(hjust = 0, size = 10)
-#   )
+```{r, message = FALSE, dpi = 300}
+activity_df %>%
+  group_by(week, act_time) %>%
+  summarise(sum_byweekday = sum(count)) %>%
+  ggplot(aes(x = act_time, y = sum_byweekday, group = week, color = week)) +
+  geom_smooth(se = FALSE) +
+  scale_x_discrete( # rename the x axis label
+    breaks = paste("activity", (0:23)*60 + 1, sep = "_"),
+    labels = c(0:23),
+    name = "time/hour"
+    ) +
+  labs(
+    y = "sum of activity counts",
+    caption = "Fig.5 A) relationship between time and 24-hour activity profile"
+  ) +
+  theme(
+    axis.text.y = element_text(size = 7),
+    plot.caption = element_text(hjust = 0, size = 10), 
+    legend.position = "bottom"
+  )
+```
+
+```{r, echo = FALSE}
 # 
 # # heatmap
 # activity_df %>% 
@@ -218,25 +195,25 @@ Here we can see that in general, the participant's avtive time is around `7:00 -
 #     plot.caption = element_text(hjust = 0, size = 10)
 #   )
 
-# 3D plot 
-count_time = activity_df %>% 
-  group_by(week, act_time) %>% 
-  summarise(sum_byweek = mean(count)) %>% 
-  mutate(hour = 0)
-
-for (i in c(0:23)) { # aggregate each hour's count
-  count_time$hour = count_time$hour + ifelse(count_time$act_time %in% paste("activity", (i*60+1):(i*60+60), sep = "_"), i, 0)
-}
-
-count_time = count_time %>% 
-  group_by(week, hour) %>% 
-  summarise(sum_byhour = sum(sum_byweek)) %>% 
-  spread(key = hour, value = sum_byhour) %>% 
-  group_by() %>% 
-  select(2:25) %>% 
-  as.matrix()
-plot_ly(z = ~count_time) %>% # use plot_ly
-  add_surface()
+# # 3D plot 
+# count_time = activity_df %>% 
+#   group_by(week, act_time) %>% 
+#   summarise(sum_byweek = mean(count)) %>% 
+#   mutate(hour = 0)
+# 
+# for (i in c(0:23)) { # aggregate each hour's count
+#   count_time$hour = count_time$hour + ifelse(count_time$act_time %in% paste("activity", (i*60+1):(i*60+60), sep = "_"), i, 0)
+# }
+# 
+# count_time = count_time %>% 
+#   group_by(week, hour) %>% 
+#   summarise(sum_byhour = sum(sum_byweek)) %>% 
+#   spread(key = hour, value = sum_byhour) %>% 
+#   group_by() %>% 
+#   select(2:25) %>% 
+#   as.matrix()
+# plot_ly(z = ~count_time) %>% # use plot_ly
+#   add_surface()
 ```
 
 24-hour activity profile (day of the week effect)
