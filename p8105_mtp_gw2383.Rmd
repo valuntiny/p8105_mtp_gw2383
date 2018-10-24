@@ -5,12 +5,14 @@ date: "2018/10/17"
 output:
   github_document:
     toc: true
+always_allow_html: yes
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(patchwork)
+library(plotly)
 theme_set(theme_bw())
 ```
 
@@ -113,7 +115,7 @@ cross_min %>%
   labs(
     y = "sum of activity counts", 
     title = "B)", 
-    caption = "Fig.3 A) Relationship between day of the week and activity in isolation to the effect of time.\n B) Relationship between day of the week and activit in addition to the effect of time"
+    caption = "Fig.3 A) Relationship between day of the week and activity in isolation to the effect of time.\n B) Relationship between day of the week and activity in addition to the effect of time"
   ) +
   theme(
     axis.text.x = element_text(size = 5),
@@ -162,7 +164,7 @@ activity_df %>%
   geom_vline(xintercept = 7*60, col = "red") + # an vertical line at 7 o'clock
   geom_vline(xintercept = 23*60, col = "red") + # an vertical line at 23 o'clock
   labs(
-    caption = "Fig.4 24-hour activity \"profiles\" for each day"
+    caption = "Fig.4 heatmap for 24-hour activity \"profiles\" for each day"
   ) +
   theme(
     axis.text.y = element_text(size = 7),
@@ -172,7 +174,72 @@ activity_df %>%
 
 Here we can see that in general, the participant's avtive time is around `7:00 - 23:00`, and his inactive time is around `23:00 - 7:00`. 
 
-day of week on 24-hour activity profile (day of the week effect)
+24-hour activity profile (time effect)
+
+```{r}
+# activity_df %>% 
+#   group_by(week, act_time) %>% 
+#   summarise(sum_byweekday = sum(count)) %>% 
+#   ggplot(aes(x = act_time, y = sum_byweekday, group = week, color = week)) +
+#   geom_smooth(se = FALSE) +
+#   scale_x_discrete( # rename the x axis label
+#     breaks = paste("activity", (0:23)*60 + 1, sep = "_"), 
+#     labels = c(0:23), 
+#     name = "time/hour"
+#     ) +
+#   labs(
+#     y = "sum of activity counts",
+#     caption = "Fig.5 A) relationship between time and 24-hour activity profile"
+#   ) +
+#   theme(
+#     axis.text.y = element_text(size = 7),
+#     plot.caption = element_text(hjust = 0, size = 10)
+#   )
+# 
+# # heatmap
+# activity_df %>% 
+#   group_by(week, act_time) %>% 
+#   summarise(sum_byweek = mean(count)) %>% 
+#   mutate(sum_byweek = log10(sum_byweek)) %>% 
+#   ggplot(aes(x = act_time, y = week, fill = sum_byweek)) +
+#   geom_tile() +
+#   scale_fill_gradient(low = "white", high = "steelblue") +
+#   guides(fill = guide_legend(title = "log10(count)")) +
+#   scale_x_discrete( # rename the x axis label
+#     breaks = paste("activity", (0:23)*60 + 1, sep = "_"), 
+#     labels = c(0:23), 
+#     name = "time/hour"
+#     ) +
+#   labs(
+#     caption = "Fig.4 heatmap for 24-hour activity \"profiles\" for each day"
+#   ) +
+#   theme(
+#     axis.text.y = element_text(size = 7),
+#     plot.caption = element_text(hjust = 0, size = 10)
+#   )
+
+# 3D plot 
+count_time = activity_df %>% 
+  group_by(week, act_time) %>% 
+  summarise(sum_byweek = mean(count)) %>% 
+  mutate(hour = 0)
+
+for (i in c(0:23)) { # aggregate each hour's count
+  count_time$hour = count_time$hour + ifelse(count_time$act_time %in% paste("activity", (i*60+1):(i*60+60), sep = "_"), i, 0)
+}
+
+count_time = count_time %>% 
+  group_by(week, hour) %>% 
+  summarise(sum_byhour = sum(sum_byweek)) %>% 
+  spread(key = hour, value = sum_byhour) %>% 
+  group_by() %>% 
+  select(2:25) %>% 
+  as.matrix()
+plot_ly(z = ~count_time) %>% # use plot_ly
+  add_surface()
+```
+
+24-hour activity profile (day of the week effect)
 
 ```{r, dpi = 300}
 activity_df %>% 
@@ -187,7 +254,7 @@ activity_df %>%
     ) +
   labs(
     y = "sum of activity counts",
-    caption = "Fig.5 relationship between day of the week and 24-hour activity profile"
+    caption = "Fig.5 B) relationship between day of the week and 24-hour activity profile"
   ) +
   theme(
     axis.text.y = element_text(size = 7),
@@ -195,4 +262,5 @@ activity_df %>%
   )
 ```
 
-Here we can see `Friday` and `Sunday` are different from the other five days, the total activity counts are higher and have greater fluctuation.
+Here we can see `Friday night` and `Sunday afternoon` are different from the other five days, the total activity counts are higher and have greater fluctuation.
+
