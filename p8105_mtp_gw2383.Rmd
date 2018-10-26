@@ -222,7 +222,7 @@ effect_of_time =
 day_of_week + effect_of_time + plot_layout(ncol = 1, heights = c(1:8))
 ```
 
-Fig.5A showed that `Friday night` and `Sunday afternoon` are different from the other five days, the total activity counts are higher and have greater fluctuation. When following the time through 47 weeks, Fig.5B showed to us that each week's profile varies and usually `Sunday` and `Friday` are the most prominent among other weekdays
+Fig.5A showed that `Friday night` and `Sunday afternoon` are different from the other five days, the total activity counts are higher and have greater fluctuation. When following the time through 47 weeks, Fig.5B showed to us that each week's profile varies and usually `Sunday` and `Friday` are the most prominent among other weekdays.
 
 ```{r, echo = FALSE}
 # 
@@ -248,7 +248,7 @@ Fig.5A showed that `Friday night` and `Sunday afternoon` are different from the 
 #     plot.caption = element_text(hjust = 0, size = 10)
 #   )
 
-# # 3D plot
+# 3D plot
 # count_time = activity_df %>%
 #   group_by(week, act_time) %>%
 #   summarise(sum_byweek = mean(count)) %>%
