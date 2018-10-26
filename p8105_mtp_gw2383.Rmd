@@ -7,9 +7,10 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(tidyverse)
 library(patchwork)
+library(ggridges)
 theme_set(theme_bw())
 ```
 
@@ -17,7 +18,8 @@ theme_set(theme_bw())
 
 For the first step, we upload and tidy the data:
 
-```{r, message = FALSE}
+```{r}
+# upload and tidy data
 activity_df = 
   read_csv("./data/p8105_mtp_data.csv") %>% 
   janitor::clean_names() %>% 
@@ -42,7 +44,7 @@ activity_df %>%
   geom_boxplot() +
   labs(
     y = "Sum of activity counts", 
-    caption = "Fig.1 boxplot for sum of each day's counts between weeks"
+    caption = "Figure.1 boxplot for sum of each day's counts between weeks"
   ) +
   theme(
     axis.text.x = element_text(size = 5), 
@@ -54,7 +56,7 @@ In Figure.1, it showed that for each week there may be several ourliers. And the
 
 ## Analysis based on total activity over the day
 
-The whole goal of this study was to figure out the patterns of physical activity over a long period. So here we want to check if time do have effect on activity.
+The whole goal of this study was to figure out the patterns of physical activity over a long period. So here we want to find out whether time has effect on activity.
 
 ```{r, out.width = "90%", dpi = 300}
 # aggregate the count data across minutes
@@ -68,53 +70,69 @@ ggplot(data = cross_min, aes(x = c(1:length(sum_byday)), y = sum_byday)) +
   labs(
     x = "day", 
     y = "sum of each day's counts", 
-    caption = "Fig.2 scatterplot and linear regression for sum of each day's counts between days"
+    caption = "Figure.2 scatterplot and linear regression for sum of each day's counts between days"
   ) +
   theme(
     plot.caption = element_text(hjust = -0.2, size = 10)
     )
 ```
 
-Figure.2 showed the linear regression line, the slope is positive: `r summary(lm(sum_byday ~ c(1:length(sum_byday)), cross_min))$coefficient[2,1]` and the p-value is very significant (`r summary(lm(sum_byday ~ c(1:length(sum_byday)), cross_min))$coefficient[2,4]`). Which suggest that there is relationship between the total activity and day, this participant became more active over time.
+Figure.2 showed the linear regression line and corresponding 95% confidence interval, the slope is positive: `r summary(lm(sum_byday ~ c(1:length(sum_byday)), cross_min))$coefficient[2,1]` (p.value = `r summary(lm(sum_byday ~ c(1:length(sum_byday)), cross_min))$coefficient[2,4]`), we then concluded that there is relationship between day and the total activity, this participant became more and more active over time.
 
-Additionally, we want to check if day of the week affects total activity, so that maybe we could find some pattern across the week.
+Additionally, we could also try to figure our if day of the week affects total activity:
 
-```{r, dpi = 300, out.width = "90%", message = FALSE}
-# line
+```{r, dpi = 300, message = FALSE}
+# in isolation to the effect of time
 in_isolation = 
   activity_df %>% 
   group_by(day) %>% 
   summarise(sum_byweek = sum(count)) %>% 
-  ggplot(aes(x = day, y = sum_byweek, group = 1)) +
-  geom_point() +
-  geom_line() +
+  ggplot(aes(x = day, y = sum_byweek, group = 1, alpha = 0.7)) +
+  geom_bar(stat = "identity") +
   labs(
     y = "sum of activity counts", 
     title = "A)"
   ) + 
-  theme(title = element_text(size = 8))
+  theme(
+    title = element_text(size = 8), 
+    legend.position = "none"
+    )
 
+# in addition to the effect of time
 in_addition = 
-cross_min %>% 
-  ggplot(aes(x = week, y = sum_byday, group = day, col = day)) +
-  geom_smooth(se = FALSE) +
+  cross_min %>% 
+  ggplot(aes(x = day, y = sum_byday, group = 1)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
   labs(
+    x = "day", 
     y = "sum of activity counts", 
     title = "B)", 
-    caption = "Fig.3 A) Relationship between day of the week and activity in isolation to the effect of time.\n B) Relationship between day of the week and activity in addition to the effect of time"
+    caption = "Figure.3 A) Relationship between day of the week and activity in isolation to the effect of time.\n B) Relationship between day of the week and activity in addition to the effect of time"
   ) +
+  facet_wrap(~week, nrow = 2) +
   theme(
-    axis.text.x = element_text(size = 5),
+    axis.text.x = element_blank(), 
     title = element_text(size = 8), 
     plot.caption = element_text(hjust = -0.2, size = 10)
   )
 
-in_isolation / in_addition
+in_isolation + in_addition + plot_layout(ncol = 1, heights = c(1:2))
 ```
 
-In Fig.3A, we can see some fluctutation over each weekday, like the total activity reached bottom on `Tuesday` and reached its peak on `Friday`. But those weekdays' total count are in the same order of magnitude, so the differences is actually not that prominent.
+In Fig.3A, we can see some fluctuation over each weekday, like the total activity reached bottom on `Tuesday` and reached its peak on `Friday`. But actually, those weekdays' total count are in the same order of magnitude, so the differences may not be that prominent. Hence, we used `ANOVA`  to test the hypothesis, below is the ANOVA table:
+
+```{r}
+lm(cross_min$sum_byday ~ cross_min$day) %>% 
+  anova() %>% 
+  knitr::kable(digits = 2)
+```
+
+So after anova, p.value >= 0.05, we conclude that day of the week (in isolation to the effect of time) doesn't affect activity. In Fig.3B, we add the effect of time, and it shows that within each week, there is also some fluctuation between weekdays. But still, counts are in the same order of magnitude, so the effect is not that prominent either.
 
 ## 24-hour profile
+
+We use heatmap for 24-hour activity profiles:
 
 ```{r, dpi = 300}
 # distribution of the activity count by using heatmap
@@ -137,10 +155,10 @@ activity_df %>%
     labels = c((0:46) * 7 + 1), 
     name = "day"
   ) +
-  geom_vline(xintercept = 7*60, col = "red") + # an vertical line at 7 o'clock
-  geom_vline(xintercept = 23*60, col = "red") + # an vertical line at 23 o'clock
+  geom_vline(xintercept = 7*60, col = "red", alpha = 0.6) + # an vertical line at 7 o'clock
+  geom_vline(xintercept = 23*60, col = "red", alpha = 0.6) + # an vertical line at 23 o'clock
   labs(
-    caption = "Fig.4 heatmap for 24-hour activity \"profiles\" for each day"
+    caption = "Figure.4 heatmap for 24-hour activity \"profiles\" for each day"
   ) +
   theme(
     axis.text.y = element_text(size = 7),
@@ -148,31 +166,63 @@ activity_df %>%
   )
 ```
 
-Here we can see that in general, the participant's avtive time is around `7:00 - 23:00`, and his inactive time is around `23:00 - 7:00`. 
+Fig.4 showed that in general, the participant's avtive time is around `7:00 - 23:00`, and his inactive time is around `23:00 - 7:00`.
 
-24-hour activity profile (time effect)
+We then try to test if day of the week and time affect activity:
 
-```{r, message = FALSE, dpi = 300}
-activity_df %>%
-  group_by(week, act_time) %>%
-  summarise(sum_byweekday = sum(count)) %>%
-  ggplot(aes(x = act_time, y = sum_byweekday, group = week, color = week)) +
+```{r, dpi = 300, fig.height = 9, message = FALSE}
+# day of the week effect
+day_of_week = 
+  activity_df %>% 
+  group_by(day, act_time) %>% 
+  summarise(sum_byweekday = mean(count)) %>% # using mean instead of sum to estimate
+  ggplot(aes(x = act_time, y = sum_byweekday, group = day, color = day)) +
   geom_smooth(se = FALSE) +
+  scale_x_discrete( # rename the x axis label
+    breaks = paste("activity", (0:23)*60 + 1, sep = "_"), 
+    labels = c(0:23), 
+    name = "time/hour"
+    ) +
+  labs(
+    y = "sum of activity counts",
+    title = "A)"
+  ) +
+  theme(
+    axis.text.y = element_text(size = 7),
+    title = element_text(size = 8), 
+    plot.caption = element_text(hjust = 0, size = 10), 
+    legend.position = "bottom"
+  )
+
+# time effect
+effect_of_time = 
+  activity_df %>%
+  ggplot(aes(x = act_time, y = count, group = day, color = day)) +
+  geom_smooth(se = FALSE, size = 0.4) +
   scale_x_discrete( # rename the x axis label
     breaks = paste("activity", (0:23)*60 + 1, sep = "_"),
     labels = c(0:23),
     name = "time/hour"
     ) +
+  coord_flip() +
+  facet_wrap(~week, nrow = 3) +
   labs(
     y = "sum of activity counts",
-    caption = "Fig.5 A) relationship between time and 24-hour activity profile"
+    title = "B)", 
+    caption = "Figure.5 A) relationship between day of the week and 24-hour activity profile.\n B) relationship between time and 24-hour activity profile."
   ) +
   theme(
-    axis.text.y = element_text(size = 7),
+    axis.text.x = element_blank(), 
+    axis.text.y = element_text(size = 4), 
+    title = element_text(size = 8), 
     plot.caption = element_text(hjust = 0, size = 10), 
-    legend.position = "bottom"
+    legend.position = "none"
   )
+
+day_of_week + effect_of_time + plot_layout(ncol = 1, heights = c(1:8))
 ```
+
+Fig.5A showed that `Friday night` and `Sunday afternoon` are different from the other five days, the total activity counts are higher and have greater fluctuation. When following the time through 47 weeks, Fig.5B showed to us that each week's profile varies and usually `Sunday` and `Friday` are the most prominent among other weekdays
 
 ```{r, echo = FALSE}
 # 
@@ -217,30 +267,19 @@ activity_df %>%
 #   as.matrix()
 # plot_ly(z = ~count_time) %>% # use plot_ly
 #   add_surface()
+
+# in_addition = 
+#   cross_min %>% 
+#   ggplot(aes(x = week, y = sum_byday, group = day, col = day)) +
+#   geom_smooth(se = FALSE) +
+#   labs(
+#     y = "sum of activity counts", 
+#     title = "B)", 
+#     caption = "Fig.3 A) Relationship between day of the week and activity in isolation to the effect of time.\n B) Relationship between day of the week and activity in addition to the effect of time"
+#   ) +
+#   theme(
+#     axis.text.x = element_text(size = 5),
+#     title = element_text(size = 8), 
+#     plot.caption = element_text(hjust = -0.2, size = 10)
+#   )
 ```
-
-24-hour activity profile (day of the week effect)
-
-```{r, dpi = 300}
-activity_df %>% 
-  group_by(day, act_time) %>% 
-  summarise(sum_byweekday = sum(count)) %>% 
-  ggplot(aes(x = act_time, y = sum_byweekday, group = day, color = day)) +
-  geom_smooth(se = FALSE) +
-  scale_x_discrete( # rename the x axis label
-    breaks = paste("activity", (0:23)*60 + 1, sep = "_"), 
-    labels = c(0:23), 
-    name = "time/hour"
-    ) +
-  labs(
-    y = "sum of activity counts",
-    caption = "Fig.5 B) relationship between day of the week and 24-hour activity profile"
-  ) +
-  theme(
-    axis.text.y = element_text(size = 7),
-    plot.caption = element_text(hjust = 0, size = 10)
-  )
-```
-
-Here we can see `Friday night` and `Sunday afternoon` are different from the other five days, the total activity counts are higher and have greater fluctuation.
-
