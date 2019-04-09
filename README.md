@@ -13,4 +13,4 @@ The data for this project was collected on a 63 year-old male with BMI 25, who w
 
 * The final version of report is <a href="https://github.com/valuntiny/p8105_mtp_gw2383/blob/master/p8105_mtp_gw2383.md">p8105_mtp_gw2383.md</a>.
 
-* The raw data can be download <a href="http://p8105.com/data/p8105_mtp_data.csv">here</a>.
+* The raw data can be downloaded <a href="http://p8105.com/data/p8105_mtp_data.csv">here</a>.
