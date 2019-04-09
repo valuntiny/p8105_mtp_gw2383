@@ -1,5 +1,5 @@
 # p8105 Data Science Midterm Project
-Guojing Wu(gw2383)
+Guojing Wu (gw2383)
 
 ## Description
 
@@ -9,8 +9,8 @@ The data for this project was collected on a 63 year-old male with BMI 25, who w
 
 ## File Structure
 
-* THe initiation of the problem is <a href="http://p8105.com/midterm_project.html">P8130.Project2018.pdf</a>.
+* THe initiation of the problem can be found <a href="http://p8105.com/midterm_project.html">here</a>.
 
 * The final version of report is <a href="https://github.com/valuntiny/p8105_mtp_gw2383/blob/master/p8105_mtp_gw2383.md">p8105_mtp_gw2383.md</a>.
 
-* The raw data can be found <a href="http://p8105.com/data/p8105_mtp_data.csv">here</a>.
+* The raw data can be download <a href="http://p8105.com/data/p8105_mtp_data.csv">here</a>.
